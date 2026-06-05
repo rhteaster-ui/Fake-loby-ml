@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fake ML Lobby Generator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Nunito+Sans:opsz,wght@6..12,500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['"Montserrat"', 'sans-serif'], 
+                        body: ['"Nunito Sans"', 'sans-serif'] 
+                    },
+                    colors: {
+                        ml: {
+                            sky: '#4ba3e3',      
+                            deepsky: '#2b7bc0',  
+                            cloud: '#e6f3ff',    
+                            crystal: '#8de4ff',  
+                            palegold: '#fef6d8', 
+                            goldtext: '#7a5b22', 
+                        }
+                    },
+                    animation: {
+                        'float-slow': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: 1, boxShadow: '0 0 15px rgba(141, 228, 255, 0.4)' },
+                            '50%': { opacity: .7, boxShadow: '0 0 5px rgba(141, 228, 255, 0.1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Reset & Smooth Scroll */
+        body { 
+            background-color: #4ba3e3; 
+            color: #ffffff; 
+            overflow-x: hidden; 
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Latar Belakang Langit & Awan (Celestial Theme) */
+        .sky-bg {
+            position: fixed; inset: 0; z-index: -2;
+            background: linear-gradient(180deg, #2b7bc0 0%, #4ba3e3 40%, #a6d8fc 75%, #e6f3ff 100%);
+        }
+
+        .clouds {
+            position: fixed; bottom: -10vh; left: 0; width: 100vw; height: 50vh; z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 100%, rgba(255,255,255,0.8) 0%, transparent 50%),
+                radial-gradient(circle at 80% 100%, rgba(255,255,255,0.6) 0%, transparent 60%),
+                radial-gradient(circle at 50% 120%, rgba(255,255,255,1) 0%, transparent 70%);
+            filter: blur(20px);
+            pointer-events: none;
+        }
+
+        /* Light Glassmorphism Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 50, 100, 0.15), inset 0 2px 0 rgba(255,255,255,0.4);
+        }
+
+        /* Input Cerah */
+        .game-input {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .game-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        .game-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            border-color: #8de4ff;
+            box-shadow: 0 0 15px rgba(141, 228, 255, 0.5);
+        }
+
+        /* Tombol Pale Gold */
+        .btn-action {
+            background: linear-gradient(to bottom, #ffffff, #fef6d8, #e8ce8a);
+            color: #7a5b22;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), inset 0 2px 0 rgba(255,255,255,0.8);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-action::after {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.8), transparent);
+            transform: rotate(45deg) translateY(-100%);
+            transition: 0.5s;
+        }
+        .btn-action:hover::after { transform: rotate(45deg) translateY(100%); }
+        .btn-action:hover { box-shadow: 0 6px 20px rgba(232, 206, 138, 0.6); transform: translateY(-2px); }
+        .btn-action:active { transform: translateY(1px); }
+
+        /* Teks Shadows */
+        .text-shadow-hard { text-shadow: 0 2px 4px rgba(0, 30, 60, 0.6); }
+        .text-shadow-soft { text-shadow: 0 1px 2px rgba(0, 30, 60, 0.4); }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center font-body antialiased selection:bg-ml-crystal selection:text-blue-900 pb-10 pt-6">
+
+    <div class="sky-bg"></div>
+    <div class="clouds"></div>
+
+    <div class="w-full max-w-md mx-auto p-5 relative z-10 flex flex-col items-center">
+        
+        <div class="w-full flex flex-col items-center mb-6 animate-float-slow">
+            <div class="relative h-20 flex items-center justify-center mb-1">
+                <div class="absolute inset-0 bg-white/40 blur-xl rounded-full"></div>
+                <img src="https://cdn.oneesports.id/wp-content/uploads/sites/2/2022/07/mlbb.png" alt="MLBB" class="relative z-10 h-full w-auto object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]">
+            </div>
+            <h1 class="font-display text-lg font-extrabold text-white tracking-widest uppercase text-center text-shadow-hard">
+                Fake Lobby <span class="text-[#facc15] drop-shadow-md">Generator</span>
+            </h1>
+        </div>
+
+        <div class="glass-panel w-full rounded-[24px] p-6 relative">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-70"></div>
+
+            <form id="generatorForm" class="space-y-6">
+                
+                <div class="flex gap-4 items-center">
+                    <div class="relative group cursor-pointer shrink-0">
+                        <div class="w-[70px] h-[70px] rounded-full p-[2px] bg-gradient-to-b from-white to-[#facc15] shadow-lg">
+                            <div class="w-full h-full rounded-full bg-ml-deepsky flex items-center justify-center overflow-hidden relative">
+                                <i id="avatarIcon" class="ph-fill ph-upload-simple text-2xl text-white/80 transition-transform group-hover:scale-110"></i>
+                                <div id="avatarPreview" class="absolute inset-0 bg-cover bg-center hidden"></div>
+                            </div>
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
+                    </div>
+
+                    <div class="flex-1">
+                        <label class="text-[11px] uppercase tracking-wider text-white font-bold mb-1.5 block text-shadow-soft">Nama Player (Max 15)</label>
+                        <input type="text" id="username" maxlength="15" placeholder="Masukkan nama..." required
+                            class="game-input w-full px-4 py-3 rounded-xl text-sm font-bold">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] uppercase tracking-wider text-white font-bold text-shadow-soft">Pilih Rank</label>
+                        <span id="rankLabel" class="text-xs font-extrabold text-ml-crystal text-shadow-hard">Immortal</span>
+                    </div>
+                    <input type="hidden" id="rank" value="imo">
+                    
+                    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-3 pt-1 snap-x" id="rankContainer">
+                        </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end">
+                        <label class="text-[11px] uppercase tracking-wider text-white font-bold text-shadow-soft">Pilih Border</label>
+                        <span id="borderLabel" class="text-xs font-extrabold text-white text-shadow-hard">ID: 0 (Default)</span>
+                    </div>
+                    <input type="hidden" id="border" value="0">
+                    
+                    <div class="flex gap-3 overflow-x-auto no-scrollbar pb-3 pt-1 snap-x" id="borderContainer">
+                        </div>
+                </div>
+
+                <button type="submit" id="generateBtn" class="btn-action w-full py-3.5 rounded-[16px] font-display font-extrabold text-[15px] flex justify-center items-center gap-2 mt-2">
+                    <i id="btnIcon" class="ph-bold ph-play-circle text-xl"></i>
+                    <span id="btnText">Generate Card</span>
+                    <i id="btnLoader" class="ph-bold ph-spinner-gap animate-spin text-xl hidden"></i>
+                </button>
+            </form>
+
+            <div id="resultBox" class="hidden mt-6 pt-6 border-t border-white/20">
+                <p class="text-center text-[11px] uppercase tracking-wider text-white font-bold mb-3 text-shadow-soft">Hasil Canvas Generator</p>
+                
+                <div class="w-full bg-white/10 border border-white/30 rounded-2xl p-2 flex flex-col items-center justify-center relative backdrop-blur-md shadow-inner">
+                    <img id="resultImg" src="" alt="Canvas Result" class="max-w-full h-auto object-contain rounded-xl drop-shadow-xl" onerror="this.src='https://placehold.co/600x900/4ba3e3/ffffff?text=Gambar+Github+Error'">
+                    
+                    <a id="downloadBtn" href="#" download="ml_lobby.png" class="mt-4 bg-ml-crystal/90 hover:bg-white text-blue-900 px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 transition-colors shadow-lg">
+                        <i class="ph-bold ph-download-simple"></i> Download Image
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 w-full flex flex-col gap-3 px-1">
+            <p class="text-center text-[11px] uppercase tracking-widest text-white/90 font-bold text-shadow-soft mb-1">Follow Our Channels</p>
+            
+            <div class="flex flex-row gap-2.5 sm:gap-3 justify-between w-full">
+                
+                <!-- Card 1: R_hmt -->
+                <a href="https://whatsapp.com/channel/0029VbBjyjlJ93wa6hwSWa0p" target="_blank" rel="noopener noreferrer" 
+                   class="flex-1 bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-between gap-2.5 transition-all shadow-lg group relative overflow-hidden min-w-0">
+                    
+                    <div class="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
+                        <img src="https://b.top4top.io/p_3808rbehk7.png" alt="R_hmt Profile" class="w-full h-full rounded-full object-cover border-2 border-white/60 group-hover:border-white transition-colors relative z-10">
+                    </div>
+                    
+                    <div class="w-full flex flex-col items-center justify-center overflow-hidden">
+                        <span class="font-extrabold text-white text-shadow-hard text-[8px] min-[360px]:text-[8.5px] min-[390px]:text-[9px] sm:text-[10px] whitespace-nowrap tracking-tighter w-full text-center">
+                            ✧･ﾟ: [𝙍]𝙝𝙢𝙏 | 𝘾𝙤𝙙𝙚⚙️𝘼𝙄 𝙡 :･ﾟ✧
+                        </span>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-ml-deepsky to-ml-sky group-hover:from-ml-sky group-hover:to-ml-crystal text-white text-[9px] sm:text-[10px] font-bold px-2 py-1.5 rounded-full w-full text-center transition-all shadow-md flex justify-center items-center gap-1.5 whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="shrink-0">
+                            <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                        </svg>
+                        Join Channel
+                    </div>
+                </a>
+
+                <!-- Card 2: Ditzzx -->
+                <a href="https://whatsapp.com/channel/0029Vb6GMVNGehERPKx21D20" target="_blank" rel="noopener noreferrer" 
+                   class="flex-1 bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-between gap-2.5 transition-all shadow-lg group relative overflow-hidden min-w-0">
+                    
+                    <div class="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
+                        <img src="https://f.top4top.io/p_3808f16eo8.jpg" alt="Ditzzx Profile" class="w-full h-full rounded-full object-cover border-2 border-white/60 group-hover:border-white transition-colors relative z-10">
+                    </div>
+                    
+                    <div class="w-full flex flex-col items-center justify-center overflow-hidden">
+                        <span class="font-extrabold text-white text-shadow-hard text-[9px] min-[360px]:text-[10px] sm:text-[11px] whitespace-nowrap tracking-tight w-full text-center">
+                            Ditzzx ☬ Indie Dev
+                        </span>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-ml-deepsky to-ml-sky group-hover:from-ml-sky group-hover:to-ml-crystal text-white text-[9px] sm:text-[10px] font-bold px-2 py-1.5 rounded-full w-full text-center transition-all shadow-md flex justify-center items-center gap-1.5 whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor" viewBox="0 0 16 16" class="shrink-0">
+                            <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+                        </svg>
+                        Join Channel
+                    </div>
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div id="sysToast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-white/50 text-blue-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-bold z-50 transform -translate-y-[150%] opacity-0 transition-all duration-400 ease-out">
+        <i id="toastIcon" class="ph-fill ph-info text-xl text-ml-sky"></i>
+        <span id="toastMsg">System Notice</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const sysToast = document.getElementById('sysToast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+            let toastTimer;
+
+            function showNotify(msg, isError = true) {
+                clearTimeout(toastTimer);
+                toastMsg.textContent = msg;
+                
+                if(isError) {
+                    toastIcon.className = 'ph-fill ph-warning-circle text-red-500 text-xl';
+                    sysToast.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-red-50/90 backdrop-blur-md border border-red-200 text-red-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-bold z-50 transform -translate-y-[150%] opacity-0 transition-all duration-400 ease-out';
+                } else {
+                    toastIcon.className = 'ph-fill ph-check-circle text-green-500 text-xl';
+                    sysToast.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-white/50 text-blue-900 px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-bold z-50 transform -translate-y-[150%] opacity-0 transition-all duration-400 ease-out';
+                }
+
+                setTimeout(() => {
+                    sysToast.classList.remove('-translate-y-[150%]', 'opacity-0');
+                    sysToast.classList.add('translate-y-0', 'opacity-100');
+                }, 10);
+
+                toastTimer = setTimeout(() => {
+                    sysToast.classList.remove('translate-y-0', 'opacity-100');
+                    sysToast.classList.add('-translate-y-[150%]', 'opacity-0');
+                }, 3000);
+            }
+
+            let uploadedImageBase64 = '';
+            document.getElementById('avatarInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if(file) {
+                    if(file.size > 2 * 1024 * 1024) return showNotify("Ukuran foto maksimal 2MB");
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedImageBase64 = e.target.result;
+                        const preview = document.getElementById('avatarPreview');
+                        preview.style.backgroundImage = `url(${uploadedImageBase64})`;
+                        preview.classList.remove('hidden');
+                        document.getElementById('avatarIcon').classList.add('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            const listRank = [
+                { id: 'gm', name: 'Grandmaster', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=GM' },
+                { id: 'epic', name: 'Epic', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=EPIC' },
+                { id: 'legend', name: 'Legend', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=LGD' },
+                { id: 'mawi', name: 'Mawi', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=MAWI' },
+                { id: 'honor', name: 'Honor', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=HNR' },
+                { id: 'glory', name: 'Glory', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=GLRY' },
+                { id: 'imo', name: 'Immortal', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=IMO' }
+            ];
+            
+            const rContainer = document.getElementById('rankContainer');
+            const inputRank = document.getElementById('rank');
+            const labelRank = document.getElementById('rankLabel');
+
+            function buildRankButtons() {
+                rContainer.innerHTML = '';
+                listRank.forEach(item => {
+                    const btn = document.createElement('div');
+                    const isAktif = item.id === inputRank.value;
+                    
+                    btn.className = `snap-center shrink-0 w-16 h-16 rounded-xl cursor-pointer transition-all duration-300 border-2 overflow-hidden bg-white/10 p-1 ${isAktif ? 'border-white scale-110 shadow-[0_0_15px_rgba(254,246,216,0.8)]' : 'border-transparent opacity-60 hover:opacity-100'}`;
+                    btn.innerHTML = `<img src="${item.img}" alt="${item.name}" class="w-full h-full object-contain drop-shadow-md rounded-lg">`;
+                    
+                    btn.addEventListener('click', () => {
+                        inputRank.value = item.id;
+                        labelRank.textContent = item.name;
+                        buildRankButtons(); 
+                        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    });
+                    rContainer.appendChild(btn);
+                });
+            }
+            buildRankButtons();
+
+            const bContainer = document.getElementById('borderContainer');
+            const inputBorder = document.getElementById('border');
+            const labelBorder = document.getElementById('borderLabel');
+
+            function buildBorderButtons() {
+                bContainer.innerHTML = '';
+                for(let i = 0; i <= 16; i++) {
+                    const btn = document.createElement('div');
+                    const isAktif = i.toString() === inputBorder.value;
+                    
+                    const imgUrl = `https://placehold.co/100x100/2b7bc0/ffffff?text=B${i}`;
+
+                    btn.className = `snap-center shrink-0 w-16 h-16 rounded-xl cursor-pointer transition-all duration-300 border-2 overflow-hidden bg-white/10 p-1 ${isAktif ? 'border-white scale-110 shadow-[0_0_15px_rgba(254,246,216,0.8)]' : 'border-transparent opacity-60 hover:opacity-100'}`;
+                    btn.innerHTML = `<img src="${imgUrl}" alt="Border ${i}" class="w-full h-full object-contain drop-shadow-md rounded-lg">`;
+                    
+                    btn.addEventListener('click', () => {
+                        inputBorder.value = i;
+                        labelBorder.textContent = i === 0 ? 'ID: 0 (Default)' : `ID: ${i}`;
+                        buildBorderButtons(); 
+                        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    });
+                    bContainer.appendChild(btn);
+                }
+            }
+            buildBorderButtons();
+
+            document.getElementById('generatorForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const uname = document.getElementById('username').value.trim();
+                const rankVal = inputRank.value;
+                const borderVal = inputBorder.value;
+
+                if(!uname) {
+                    document.getElementById('username').focus();
+                    return showNotify("Nama player tidak boleh kosong!");
+                }
+
+                const btn = document.getElementById('generateBtn');
+                const btnIcon = document.getElementById('btnIcon');
+                const btnText = document.getElementById('btnText');
+                const btnLoader = document.getElementById('btnLoader');
+                
+                // Nyalakan UI Loading
+                btn.classList.add('opacity-80', 'pointer-events-none');
+                btnIcon.classList.add('hidden');
+                btnLoader.classList.remove('hidden');
+
+                try {
+                    let finalAvatarUrl = 'default';
+
+                    if (uploadedImageBase64) {
+                        btnText.textContent = 'Mengunggah Avatar...';
+                        
+                        const uploadRes = await fetch('/api/upload', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageBase64: uploadedImageBase64 })
+                        });
+                        
+                        const uploadData = await uploadRes.json();
+                        
+                        if (uploadData.success && uploadData.url) {
+                            finalAvatarUrl = uploadData.url;
+                        } else {
+                            throw new Error("Gagal mengunggah foto ke server");
+                        }
+                    }
+
+                    btnText.textContent = 'Memproses Canvas...';
+
+                    const genRes = await fetch('/api/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            avatarUrl: finalAvatarUrl,
+                            username: uname,
+                            rank: rankVal,
+                            border: borderVal
+                        })
+                    });
+
+                    const genData = await genRes.json();
+
+                    if (genData.success && genData.imageUrl) {
+                        const resultBox = document.getElementById('resultBox');
+                        const resultImg = document.getElementById('resultImg');
+                        const downloadBtn = document.getElementById('downloadBtn');
+                        
+                        resultImg.src = genData.imageUrl;
+                        downloadBtn.href = genData.imageUrl;
+                        
+                        resultBox.classList.remove('hidden');
+                        showNotify("Canvas berhasil dibuat!", false); 
+                        
+                        setTimeout(() => resultBox.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+                    } else {
+                        throw new Error(genData.error || "Module gagal memproses gambar");
+                    }
+
+                } catch (err) {
+                    showNotify(err.message, true); 
+                } finally {
+                    btn.classList.remove('opacity-80', 'pointer-events-none');
+                    btnIcon.classList.remove('hidden');
+                    btnText.textContent = 'Generate Card';
+                    btnLoader.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
