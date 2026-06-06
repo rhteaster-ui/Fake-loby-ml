@@ -280,6 +280,7 @@
             function showNotify(msg, isError = true) {
                 clearTimeout(toastTimer);
                 toastMsg.textContent = msg;
+                console[isError ? 'error' : 'log']('[Fake ML]', msg);
                 
                 if(isError) {
                     toastIcon.className = 'ph-fill ph-warning-circle text-red-500 text-xl';
@@ -298,6 +299,24 @@
                     sysToast.classList.remove('translate-y-0', 'opacity-100');
                     sysToast.classList.add('-translate-y-[150%]', 'opacity-0');
                 }, 3000);
+            }
+
+            async function readJsonResponse(response) {
+                const rawText = await response.text();
+                let data;
+                try {
+                    data = rawText ? JSON.parse(rawText) : {};
+                } catch (error) {
+                    const cleanText = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    const preview = cleanText ? cleanText.slice(0, 120) : `HTTP ${response.status}`;
+                    throw new Error(`Server mengirim non-JSON (${response.status}). ${preview}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || `Request gagal dengan status ${response.status}`);
+                }
+
+                return data;
             }
 
             let uploadedImageBase64 = '';
@@ -319,13 +338,13 @@
             });
 
             const listRank = [
-                { id: 'gm', name: 'Grandmaster', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=GM' },
-                { id: 'epic', name: 'Epic', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=EPIC' },
-                { id: 'legend', name: 'Legend', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=LGD' },
-                { id: 'mawi', name: 'Mawi', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=MAWI' },
-                { id: 'honor', name: 'Honor', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=HNR' },
-                { id: 'glory', name: 'Glory', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=GLRY' },
-                { id: 'imo', name: 'Immortal', img: 'https://placehold.co/100x100/2b7bc0/ffffff?text=IMO' }
+                { id: 'epic', name: 'Epic', img: '/api/asset?type=rank&id=epic' },
+                { id: 'glory', name: 'Glory', img: '/api/asset?type=rank&id=glory' },
+                { id: 'gm', name: 'Grandmaster', img: '/api/asset?type=rank&id=gm' },
+                { id: 'honor', name: 'Honor', img: '/api/asset?type=rank&id=honor' },
+                { id: 'imo', name: 'Immortal', img: '/api/asset?type=rank&id=imo' },
+                { id: 'legend', name: 'Legend', img: '/api/asset?type=rank&id=legend' },
+                { id: 'mawi', name: 'Mawi', img: '/api/asset?type=rank&id=mawi' }
             ];
             
             const rContainer = document.getElementById('rankContainer');
@@ -339,7 +358,8 @@
                     const isAktif = item.id === inputRank.value;
                     
                     btn.className = `snap-center shrink-0 w-16 h-16 rounded-xl cursor-pointer transition-all duration-300 border-2 overflow-hidden bg-white/10 p-1 ${isAktif ? 'border-white scale-110 shadow-[0_0_15px_rgba(254,246,216,0.8)]' : 'border-transparent opacity-60 hover:opacity-100'}`;
-                    btn.innerHTML = `<img src="${item.img}" alt="${item.name}" class="w-full h-full object-contain drop-shadow-md rounded-lg">`;
+                    btn.title = item.name;
+                    btn.innerHTML = `<img src="${item.img}" alt="${item.name}" class="w-full h-full object-contain drop-shadow-md rounded-lg" loading="lazy">`;
                     
                     btn.addEventListener('click', () => {
                         inputRank.value = item.id;
@@ -362,10 +382,13 @@
                     const btn = document.createElement('div');
                     const isAktif = i.toString() === inputBorder.value;
                     
-                    const imgUrl = `https://placehold.co/100x100/2b7bc0/ffffff?text=B${i}`;
+                    const previewHtml = i === 0
+                        ? `<div class="w-full h-full rounded-lg border-[4px] border-[#b8956f] bg-white/10 flex items-center justify-center text-[10px] font-extrabold text-white">Default</div>`
+                        : `<img src="/api/asset?type=border&id=${i}" alt="Border ${i}" class="w-full h-full object-contain drop-shadow-md rounded-lg" loading="lazy">`;
 
                     btn.className = `snap-center shrink-0 w-16 h-16 rounded-xl cursor-pointer transition-all duration-300 border-2 overflow-hidden bg-white/10 p-1 ${isAktif ? 'border-white scale-110 shadow-[0_0_15px_rgba(254,246,216,0.8)]' : 'border-transparent opacity-60 hover:opacity-100'}`;
-                    btn.innerHTML = `<img src="${imgUrl}" alt="Border ${i}" class="w-full h-full object-contain drop-shadow-md rounded-lg">`;
+                    btn.title = i === 0 ? 'Border 0 - outline default gold #b8956f' : `Border ${i}`;
+                    btn.innerHTML = previewHtml;
                     
                     btn.addEventListener('click', () => {
                         inputBorder.value = i;
@@ -401,25 +424,7 @@
                 btnLoader.classList.remove('hidden');
 
                 try {
-                    let finalAvatarUrl = 'default';
-
-                    if (uploadedImageBase64) {
-                        btnText.textContent = 'Mengunggah Avatar...';
-                        
-                        const uploadRes = await fetch('/api/upload', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ imageBase64: uploadedImageBase64 })
-                        });
-                        
-                        const uploadData = await uploadRes.json();
-                        
-                        if (uploadData.success && uploadData.url) {
-                            finalAvatarUrl = uploadData.url;
-                        } else {
-                            throw new Error("Gagal mengunggah foto ke server");
-                        }
-                    }
+                    const finalAvatarUrl = uploadedImageBase64 || undefined;
 
                     btnText.textContent = 'Memproses Canvas...';
 
@@ -427,14 +432,14 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            avatarUrl: finalAvatarUrl,
+                            ...(finalAvatarUrl ? { avatarUrl: finalAvatarUrl } : {}),
                             username: uname,
                             rank: rankVal,
                             border: borderVal
                         })
                     });
 
-                    const genData = await genRes.json();
+                    const genData = await readJsonResponse(genRes);
 
                     if (genData.success && genData.imageUrl) {
                         const resultBox = document.getElementById('resultBox');
